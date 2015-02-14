@@ -1,4 +1,4 @@
-# cfndsl_examples
+# Cfndsl Examples
 Cloud Fornation examples for cfndsl ruby coding
 
 
