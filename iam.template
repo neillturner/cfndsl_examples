@@ -1,0 +1,324 @@
+{
+   "AWSTemplateFormatVersion": "2010-09-09",
+   "Resources": {
+
+"myuser" : {
+   "Type" : "AWS::IAM::User",
+   "Properties" : {
+      "Path" : "/",
+      "LoginProfile" : {
+         "Password" : "myP@ssW0rd"
+      },
+      "Policies" : [ {
+         "PolicyName" : "giveaccesstoqueueonly",
+         "PolicyDocument" : {
+            "Version": "2012-10-17",
+            "Statement" : [ {
+               "Effect" : "Allow",
+               "Action" : [ "sqs:*" ],
+               "Resource" : [ {
+                  "Fn::GetAtt" : [ "myqueue", "Arn" ]
+               } ]
+            }, {
+               "Effect" : "Deny",
+               "Action" : [ "sqs:*" ],
+               "NotResource" : [ {
+                  "Fn::GetAtt" : [ "myqueue", "Arn" ]
+               } ]
+            }
+         ] }
+      }, {
+         "PolicyName" : "giveaccesstotopiconly",
+         "PolicyDocument" : {
+            "Version": "2012-10-17",
+            "Statement" : [ {
+               "Effect" : "Allow",
+               "Action" : [ "sns:*" ],
+               "Resource" : [ { "Ref" : "mytopic" } ]
+            }, {
+               "Effect" : "Deny",
+               "Action" : [ "sns:*" ],
+               "NotResource" : [ { "Ref" : "mytopic" } ]
+            } ]
+         }
+      } ]
+   }
+},
+
+"myaccesskey" : {
+   "Type" : "AWS::IAM::AccessKey",
+   "Properties" : {
+      "UserName" : { "Ref" : "myuser" }
+   }
+},
+
+"AccessKeyformyaccesskey" : {
+   "Value" : { "Ref" : "myaccesskey" }
+},
+"SecretKeyformyaccesskey" : {
+   "Value" : {
+      "Fn::GetAtt" : [ "myaccesskey", "SecretAccessKey" ]
+   }
+},
+
+"myinstance" : {
+   "Type" : "AWS::EC2::Instance",
+   "Properties" : {
+      "AvailabilityZone" : "us-east-1a",
+      "ImageId" : "ami-20b65349",
+      "UserData" : {
+         "Fn::Base64" : {
+            "Fn::Join" : [
+               "", [
+                  "ACCESS_KEY=", {
+                     "Ref" : "myaccesskey"
+                  },
+                  "&",
+                  "SECRET_KEY=",
+                  {
+                     "Fn::GetAtt" : [
+                        "myaccesskey",
+                        "SecretAccessKey"
+                     ]
+                  }
+               ]
+            ]
+         }
+      }
+   }
+},
+
+"mygroup" : {
+   "Type" : "AWS::IAM::Group",
+   "Properties" : {
+      "Path" : "/myapplication/",
+      "Policies" : [ {
+         "PolicyName" : "myapppolicy",
+         "PolicyDocument" : {
+            "Version": "2012-10-17",
+            "Statement" : [ {
+               "Effect" : "Allow",
+               "Action" : [ "sqs:*" ],
+               "Resource" : [ {
+                  "Fn::GetAtt" : [ "myqueue", "Arn" ]
+               } ]
+            },
+            {
+               "Effect" : "Deny",
+               "Action" : [ "sqs:*" ],
+               "NotResource" : [ { "Fn::GetAtt" : [ "myqueue", "Arn" ] } ]
+            }
+         ] }
+      } ]
+   }
+},
+
+"addUserToGroup" : {
+   "Type" : "AWS::IAM::UserToGroupAddition",
+   "Properties" : {
+      "GroupName" : "myexistinggroup2",
+      "Users" : [ "existinguser1", { "Ref" : "myuser" } ]
+   }
+},
+
+"mypolicy" : {
+   "Type" : "AWS::IAM::Policy",
+   "Properties" : {
+      "PolicyName" : "mygrouppolicy",
+      "PolicyDocument" : {
+         "Version": "2012-10-17",
+         "Statement" : [ {
+            "Effect" : "Allow",
+            "Action" : [
+               "s3:GetObject" , "s3:PutObject" , "s3:PutObjectAcl" ],
+            "Resource" : "arn:aws:s3:::myAWSBucket/*"
+         } ]
+      },
+      "Groups" : [ "myexistinggroup1", { "Ref" : "mygroup" } ]
+   }
+},
+
+"mybucketpolicy" : {
+   "Type" : "AWS::S3::BucketPolicy",
+   "Properties" : {
+      "PolicyDocument" : {
+         "Id" : "MyPolicy",
+         "Version": "2012-10-17",
+         "Statement" : [ {
+            "Sid" : "ReadAccess",
+            "Action" : [ "s3:GetObject" ],
+            "Effect" : "Allow",
+            "Resource" : { "Fn::Join" : [
+                  "", [ "arn:aws:s3:::", { "Ref" : "mybucket" } , "/*" ]
+               ] },
+            "Principal" : {
+               "AWS" : { "Fn::GetAtt" : [ "user1", "Arn" ] }
+            }
+         } ]
+      },
+      "Bucket" : { "Ref" : "mybucket" }
+   }
+},
+
+"mysnspolicy" : {
+   "Type" : "AWS::SNS::TopicPolicy",
+   "Properties" : {
+      "PolicyDocument" :  {
+         "Id" : "MyTopicPolicy",
+         "Version" : "2012-10-17",
+         "Statement" : [ {
+            "Sid" : "My-statement-id",
+            "Effect" : "Allow",
+            "Principal" : {
+               "AWS" : { "Fn::GetAtt" : [ "myuser", "Arn" ] }
+            },
+            "Action" : "sns:Publish",
+            "Resource" : "*"
+         } ]
+      },
+      "Topics" : [ { "Ref" : "mytopic" } ]
+   }
+},
+
+"mysqspolicy" : {
+   "Type" : "AWS::SQS::QueuePolicy",
+   "Properties" : {
+      "PolicyDocument" : {
+         "Id" : "MyQueuePolicy",
+         "Version" : "2012-10-17",
+         "Statement" : [ {
+            "Sid" : "Allow-User-SendMessage",
+            "Effect" : "Allow",
+            "Principal" : {
+               "AWS" : "arn:aws:iam::123456789012:user/myapp"
+            },
+            "Action" : [ "sqs:SendMessage" ],
+            "Resource" : "*"
+         } ]
+      },
+      "Queues" : [
+         "https://sqs.us-east-1.amazonaws.com/123456789012/myexistingqueue",
+         { "Ref" : "myqueue" }
+      ]
+   }
+},
+
+
+      "myEC2Instance": {
+         "Type": "AWS::EC2::Instance",
+         "Version": "2009-05-15",
+         "Properties": {
+            "ImageId": "ami-205fba49",
+            "InstanceType": "m1.small",
+            "Monitoring": "true",
+            "DisableApiTermination": "false",
+            "IamInstanceProfile": {
+               "Ref": "RootInstanceProfile"
+            }
+         }
+      },
+      "RootRole": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "AssumeRolePolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+               } ]
+            },
+            "Path": "/"
+         }
+      },
+      "RolePolicies": {
+         "Type": "AWS::IAM::Policy",
+         "Properties": {
+            "PolicyName": "root",
+            "PolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+               } ]
+            },
+            "Roles": [ { "Ref": "RootRole" } ]
+         }
+      },
+      "RootInstanceProfile": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "Path": "/",
+            "Roles": [ { "Ref": "RootRole" } ]
+         }
+      },
+
+      "myLCOne": {
+         "Type": "AWS::AutoScaling::LaunchConfiguration",
+         "Version": "2009-05-15",
+         "Properties": {
+            "ImageId": "ami-205fba49",
+            "InstanceType": "m1.small",
+            "InstanceMonitoring": "true",
+            "IamInstanceProfile": { "Ref": "RootInstanceProfile" }
+         }
+      },
+      "myASGrpOne": {
+         "Type": "AWS::AutoScaling::AutoScalingGroup",
+         "Version": "2009-05-15",
+         "Properties": {
+            "AvailabilityZones": [ "us-east-1a" ],
+            "LaunchConfigurationName": { "Ref": "myLCOne" },
+            "MinSize": "0",
+            "MaxSize": "0",
+            "HealthCheckType": "EC2",
+            "HealthCheckGracePeriod": "120"
+         }
+      },
+      "RootRole2": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "AssumeRolePolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+               } ]
+            },
+            "Path": "/"
+         }
+      },
+      "RolePolicies2": {
+         "Type": "AWS::IAM::Policy",
+         "Properties": {
+            "PolicyName": "root",
+            "PolicyDocument": {
+               "Version" : "2012-10-17",
+               "Statement": [ {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+               } ]
+            },
+            "Roles": [ { "Ref": "RootRole2" } ]
+         }
+      },
+      "RootInstanceProfile2": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "Path": "/",
+            "Roles": [ { "Ref": "RootRole2" } ]
+         }
+      }
+
+
+
+
+   }
+}

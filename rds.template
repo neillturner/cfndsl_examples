@@ -1,0 +1,136 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+
+"MyDB" : {
+ "Type" : "AWS::RDS::DBInstance",
+ "Properties" : {
+     "DBSecurityGroups" : [
+        {"Ref" : "MyDbSecurityByEC2SecurityGroup"}, {"Ref" : "MyDbSecurityByCIDRIPGroup"} ],
+     "AllocatedStorage" : "5",
+     "DBInstanceClass" : "db.m1.small",
+     "Engine" : "MySQL",
+     "MasterUsername" : "MyName",
+     "MasterUserPassword" : "MyPassword"
+ },
+ "DeletionPolicy" : "Snapshot"
+},
+
+"MyDB2" : {
+ "Type" : "AWS::RDS::DBInstance",
+ "Properties" : {
+     "DBSecurityGroups" : [
+        {"Ref" : "MyDbSecurityByEC2SecurityGroup"}, {"Ref" : "MyDbSecurityByCIDRIPGroup"} ],
+     "AllocatedStorage" : "5",
+     "DBInstanceClass" : "db.m1.small",
+     "Engine" : "oracle-ee",
+     "LicenseModel" : "bring-your-own-license",
+     "MasterUsername" : "master",
+     "MasterUserPassword" : "SecretPassword01"
+ },
+ "DeletionPolicy" : "Snapshot"
+},
+
+"MyDbSecurityByCIDRIPGroup" : {
+ "Type" : "AWS::RDS::DBSecurityGroup",
+ "Properties" : {
+     "GroupDescription" : "Ingress for CIDRIP",
+     "DBSecurityGroupIngress" : {
+         "CIDRIP" : "192.168.0.0/32"
+     }
+ }
+},
+
+"DBInstance" : {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+      "DBName"            : { "Ref" : "DBName" },
+      "Engine"            : "MySQL",
+      "MasterUsername"    : { "Ref" : "DBUsername" },
+      "DBInstanceClass"   : { "Ref" : "DBClass" },
+      "DBSecurityGroups"  : [ { "Ref" : "DBSecurityGroup" } ],
+      "AllocatedStorage"  : { "Ref" : "DBAllocatedStorage" },
+      "MasterUserPassword": { "Ref" : "DBPassword" }
+   }
+},
+
+"DBSecurityGroup": {
+   "Type": "AWS::RDS::DBSecurityGroup",
+   "Properties": {
+      "DBSecurityGroupIngress": { "EC2SecurityGroupName": { "Ref": "WebServerSecurityGroup" } },
+      "GroupDescription"      : "Frontend Access"
+   }
+},
+
+"WebServerSecurityGroup" : {
+   "Type" : "AWS::EC2::SecurityGroup",
+   "Properties" : {
+      "GroupDescription" : "Enable HTTP access via port 80 and SSH access",
+      "SecurityGroupIngress" : [
+         {"IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0"},
+         {"IpProtocol" : "tcp", "FromPort" : "22", "ToPort" : "22", "CidrIp" : "0.0.0.0/0"}
+      ]
+   }
+},
+
+      "DBinstance2" : {
+         "Type" : "AWS::RDS::DBInstance",
+         "Properties" : {
+            "AllocatedStorage" : "5",
+            "DBInstanceClass" : "db.m1.small",
+            "DBName" : { "Ref" : "MyDBName" },
+            "DBSecurityGroups" : [ { "Ref" : "DbSecurityByEC2SecurityGroup" } ],
+            "DBSubnetGroupName" : { "Ref" : "MyDBSubnetGroup" },
+            "Engine" : "MySQL",
+            "MasterUserPassword":  "MyDBPassword",
+            "MasterUsername"    :  "MyDBUsername"
+        },
+         "DeletionPolicy" : "Snapshot"
+      },
+
+      "DbSecurityByEC2SecurityGroup" : {
+         "Type" : "AWS::RDS::DBSecurityGroup",
+         "Properties" : {
+            "GroupDescription" : "Ingress for Amazon EC2 security group",
+            "EC2VpcId" : "MyVPC" ,
+            "DBSecurityGroupIngress" : [ {
+               "EC2SecurityGroupId" : "sg-b0ff1111",
+               "EC2SecurityGroupOwnerId" : "111122223333"
+            }, {
+               "EC2SecurityGroupId" : "sg-ffd722222",
+               "EC2SecurityGroupOwnerId" : "111122223333"
+            } ]
+         }
+      },
+
+  "DBEC2SecurityGroup": {
+    "Type": "AWS::EC2::SecurityGroup",
+    "Properties" : {
+      "GroupDescription": "Open database for access",
+      "SecurityGroupIngress" : [{
+        "IpProtocol" : "tcp",
+        "FromPort" : "3306",
+        "ToPort" : "3306",
+        "SourceSecurityGroupName" : { "Ref" : "WebServerSecurityGroup" }
+      }]
+    }
+  },
+
+
+  "DBInstance3" : {
+    "Type": "AWS::RDS::DBInstance",
+    "Properties": {
+      "DBName"            : { "Ref" : "DBName" },
+      "Engine"            : "MySQL",
+      "MultiAZ"           : { "Ref": "MultiAZDatabase" },
+      "MasterUsername"    : { "Ref" : "DBUser" },
+      "DBInstanceClass"   : { "Ref" : "DBClass" },
+      "AllocatedStorage"  : { "Ref" : "DBAllocatedStorage" },
+      "MasterUserPassword": { "Ref" : "DBPassword" },
+      "VPCSecurityGroups" : [ { "Fn::GetAtt": [ "DBEC2SecurityGroup", "GroupId" ] } ]
+    }
+  }
+
+}
+}
+

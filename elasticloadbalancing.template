@@ -1,0 +1,42 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+
+"MyLoadBalancer" : {
+    "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+    "Properties" : {
+        "AvailabilityZones" : [ "us-east-1a" ],
+        "Listeners" : [ {
+            "LoadBalancerPort" : "80",
+            "InstancePort" : "80",
+            "Protocol" : "HTTP"
+        } ]
+    }
+},
+
+"MyLoadBalancer2" : {
+    "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+    "Properties" : {
+        "AvailabilityZones" : [ "us-east-1a" ],
+        "Instances" : [
+            { "Ref" : "logical name of AWS::EC2::Instance resource 1" },
+            { "Ref" : "logical name of AWS::EC2::Instance resource 2" }
+        ],
+        "Listeners" : [ {
+            "LoadBalancerPort" : "80",
+            "InstancePort" : "80",
+            "Protocol" : "HTTP"
+        } ],
+
+        "HealthCheck" : {
+            "Target" : "HTTP:80/",
+            "HealthyThreshold" : "3",
+            "UnhealthyThreshold" : "5",
+            "Interval" : "30",
+            "Timeout" : "5"
+        }
+    }
+}
+
+}
+}

@@ -1,0 +1,183 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+
+"myDistribution" : {
+    "Type" : "AWS::CloudFront::Distribution",
+    "Properties" : {
+        "DistributionConfig" : {
+            "Origins" : [ {
+                "DomainName": "mybucket.s3.amazonaws.com",
+                "Id" : "myS3Origin",
+                "S3OriginConfig" : {
+                    "OriginAccessIdentity" : "origin-access-identity/cloudfront/E127EXAMPLE51Z"
+                }
+            }],
+            "Enabled" : "true",
+            "Comment" : "Some comment",
+            "DefaultRootObject" : "index.html",
+            "Logging" : {
+                "IncludeCookies" : "false",
+                "Bucket" : "mylogs.s3.amazonaws.com",
+                "Prefix" : "myprefix"
+            },
+            "Aliases" : [ "mysite.example.com", "yoursite.example.com" ],
+            "DefaultCacheBehavior" : {
+                "AllowedMethods" : [ "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT" ],
+                "TargetOriginId" : "myS3Origin",
+                "ForwardedValues" : {
+                    "QueryString" : "false",
+                    "Cookies" : { "Forward" : "none" }
+                },
+                "TrustedSigners" : [ "1234567890EX", "1234567891EX" ],
+                "ViewerProtocolPolicy" : "allow-all"
+            },
+           "PriceClass" : "PriceClass_200",
+           "Restrictions" : {
+               "GeoRestriction" : {
+                   "RestrictionType" : "whitelist",
+                   "Locations" : [ "AQ", "CV" ]
+               }
+           },
+           "ViewerCertificate" : { "CloudFrontDefaultCertificate" : "true" }
+        }
+    }
+},
+
+"myDistribution2": {
+    "Type": "AWS: : CloudFront: : Distribution",
+    "Properties": {
+        "DistributionConfig": {
+            "Origins": [
+                {
+                    "DomainName": "www.example.com",
+                    "Id": "myCustomOrigin",
+                    "CustomOriginConfig": {
+                        "HTTPPort": "80",
+                        "HTTPSPort": "443",
+                        "OriginProtocolPolicy": "http-only"
+                    }
+                }
+            ],
+            "Enabled": "true",
+            "Comment": "Somecomment",
+            "DefaultRootObject": "index.html",
+            "Logging": {
+                "IncludeCookies" : "true",
+                "Bucket": "mylogs.s3.amazonaws.com",
+                "Prefix": "myprefix"
+            },
+            "Aliases": [
+                "mysite.example.com",
+                "*.yoursite.example.com"
+            ],
+            "DefaultCacheBehavior": {
+                "TargetOriginId": "myCustomOrigin",
+                "SmoothStreaming" : "false",
+                "ForwardedValues": {
+                    "QueryString": "false",
+                    "Cookies" : { "Forward" : "all" }
+                },
+                "TrustedSigners": [
+                    "1234567890EX",
+                    "1234567891EX"
+                ],
+                "ViewerProtocolPolicy": "allow-all"
+            },
+            "CustomErrorResponses" : [ {
+                "ErrorCode" : "404",
+                "ResponsePagePath" : "/error-pages/404.html",
+                "ResponseCode" : "200",
+                "ErrorCachingMinTTL" : "30"
+            } ],
+           "PriceClass" : "PriceClass_200",
+           "Restrictions" : {
+               "GeoRestriction" : {
+                   "RestrictionType" : "whitelist",
+                   "Locations" : [ "AQ", "CV" ]
+               }
+           },
+           "ViewerCertificate" : { "CloudFrontDefaultCertificate" : "true" }
+        }
+    }
+},
+
+        "myDistribution3" : {
+            "Type" : "AWS::CloudFront::Distribution",
+            "Properties" : {
+                "DistributionConfig" : {
+                    "Origins" : [ {
+                        "Id" : "myS3Origin",
+                        "DomainName" : "mybucket.s3.amazonaws.com",
+                        "S3OriginConfig" : {
+                            "OriginAccessIdentity" : "origin-access-identity/cloudfront/E127EXAMPLE51Z"
+                        }
+                     },
+                     {
+                         "Id" : "myCustomOrigin",
+                         "DomainName" : "www.example.com",
+                         "CustomOriginConfig" : {
+                             "HTTPPort" : "80",
+                             "HTTPSPort" : "443",
+                             "OriginProtocolPolicy" : "http-only"
+                         }
+                     }
+                   ],
+                   "Enabled" : "true",
+                   "Comment" : "Some comment",
+                   "DefaultRootObject" : "index.html",
+                   "Logging" : {
+                       "IncludeCookies" : "true",
+                       "Bucket" : "mylogs.s3.amazonaws.com",
+                       "Prefix" : "myprefix"
+                   },
+                   "Aliases" : [ "mysite.example.com", "yoursite.example.com" ],
+                   "DefaultCacheBehavior" : {
+                       "TargetOriginId" : "myS3Origin",
+                       "ForwardedValues" : {
+                           "QueryString" : "false",
+                           "Cookies" : { "Forward" : "all" }
+                        },
+                       "TrustedSigners" : [ "1234567890EX", "1234567891EX"  ],
+                       "ViewerProtocolPolicy" : "allow-all",
+                       "MinTTL" : "100",
+                       "SmoothStreaming" : "true"
+                   },
+                   "CacheBehaviors" : [ {
+                            "AllowedMethods" : [ "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT" ],
+                            "TargetOriginId" : "myS3Origin",
+                            "ForwardedValues" : {
+                                "QueryString" : "true",
+                                "Cookies" : { "Forward" : "none" }
+                            },
+                            "TrustedSigners" : [ "1234567890EX", "1234567891EX" ],
+                            "ViewerProtocolPolicy" : "allow-all",
+                            "MinTTL" : "50",
+                            "PathPattern" : "images1/*.jpg"
+                        },
+                        {
+                            "AllowedMethods" : [ "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT" ],
+                            "TargetOriginId" : "myCustomOrigin",
+                            "ForwardedValues" : {
+                                "QueryString" : "true",
+                                "Cookies" : { "Forward" : "none" }
+                            },
+                            "TrustedSigners" : [ "1234567890EX", "1234567891EX"  ],
+                            "ViewerProtocolPolicy" : "allow-all",
+                            "MinTTL" : "50",
+                            "PathPattern" : "images2/*.jpg"
+                        }
+                   ],
+                   "CustomErrorResponses" : [ {
+                       "ErrorCode" : "404",
+                       "ResponsePagePath" : "/error-pages/404.html",
+                       "ResponseCode" : "200",
+                       "ErrorCachingMinTTL" : "30"
+                   } ],
+                   "PriceClass" : "PriceClass_All",
+                   "ViewerCertificate" : { "CloudFrontDefaultCertificate" : "true" }
+                }
+            }
+        }
+    }
+}

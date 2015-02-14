@@ -1,0 +1,104 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+
+
+"myDNSRecord" : {
+  "Type" : "AWS::Route53::RecordSet",
+  "Properties" :
+  {
+    "HostedZoneId" : "/hostedzone/Z3DG6IL3SJCGPX",
+    "Name" : "mysite.example.com.",
+    "Type" : "SPF",
+    "TTL" : "900",
+    "ResourceRecords" : [ "\"v=spf1 ip4:192.168.0.1/16 -all\"" ]
+  }
+},
+
+"myDNSRecord2" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "Properties" : {
+                "HostedZoneName" : "example.com.",
+                "Comment" : "A records for my frontends.",
+                "Name" : "mysite.example.com.",
+                "Type" : "A",
+                "TTL" : "900",
+                "ResourceRecords" : [
+                    "192.168.0.1",
+                    "192.168.0.2"
+                ]
+            }
+        },
+
+        "myDNSOne" : {
+            "Type" : "AWS::Route53::RecordSetGroup",
+            "Properties" : {
+                "HostedZoneName" : "example.com.",
+                "Comment" : "Weighted RR for my frontends.",
+                "RecordSets" : [
+                  {
+                    "Name" : "mysite.example.com.",
+                    "Type" : "CNAME",
+                    "TTL" : "900",
+                    "SetIdentifier" : "Frontend One",
+                    "Weight" : "4",
+                    "ResourceRecords" : ["example-ec2.amazonaws.com"]
+                  },
+                  {
+                    "Name" : "mysite.example.com.",
+                    "Type" : "CNAME",
+                    "TTL" : "900",
+                    "SetIdentifier" : "Frontend Two",
+                    "Weight" : "6",
+                    "ResourceRecords" : ["example-ec2-larger.amazonaws.com"]
+                  }
+                  ]
+            }
+        },
+
+
+      "myELB" : {
+        "Type" : "AWS::ElasticLoadBalancing::LoadBalancer",
+        "Properties" : {
+            "AvailabilityZones" : [ "us-east-1a" ],
+            "Listeners" : [ {
+                "LoadBalancerPort" : "80",
+                "InstancePort" : "80",
+                "Protocol" : "HTTP"
+            } ]
+        }
+      },
+      "myDNS" : {
+        "Type" : "AWS::Route53::RecordSetGroup",
+        "Properties" : {
+          "HostedZoneName" : "example.com.",
+          "Comment" : "Zone apex alias targeted to myELB LoadBalancer.",
+          "RecordSets" : [
+            {
+              "Name" : "example.com.",
+              "Type" : "A",
+              "AliasTarget" : {
+                  "HostedZoneId" : { "Fn::GetAtt" : ["myELB", "CanonicalHostedZoneNameID"] },
+                  "DNSName" : { "Fn::GetAtt" : ["myELB","CanonicalHostedZoneName"] }
+              }
+            }
+          ]
+        }
+    },
+
+"myDNS" : {
+    "Type" : "AWS::Route53::RecordSetGroup",
+    "Properties" : {
+        "HostedZoneId" : { "Ref" : "myHostedZoneID" },
+        "RecordSets" : [{
+            "Name" : { "Ref" : "myRecordSetDomainName" },
+            "Type" : "A",
+            "AliasTarget" : {
+                "HostedZoneId" : "Z2FDTNDATAQYW2",
+                "DNSName" : { "Ref" : "myCloudFrontDistributionDomainName" }
+            }
+        }]
+    }
+}
+}
+}

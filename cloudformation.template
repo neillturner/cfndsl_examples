@@ -1,0 +1,128 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+    "Resources" : {
+
+"UserData" : {
+    "Fn::Base64" : {
+        "Fn::Join" : [ ",", [
+            { "Ref" : "MyValue" },
+            { "Ref" : "MyName" },
+            "Hello World" ] ]
+    }
+},
+
+"UserData2" : {
+    "Fn::Base64" : {
+        "Fn::Join" : [ "", [
+            "ACCESS_KEY=", { "Ref" : "AccessKey" },
+            "SECRET_KEY=", { "Ref" : "SecretKey" } ]
+        ]
+    }
+},
+
+"Parameters" : {
+    "UserName" : {
+        "Type" : "String",
+        "Default" : "nonadmin",
+        "Description" : "Assume a vanilla user if no command-line spec provided"
+    }
+},
+
+"Parameters2" : {
+    "AdminUserAccount": {
+      "Default": "admin",
+      "NoEcho": "true",
+      "Description" : "The admin account user name",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "16",
+      "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*"
+    }
+},
+
+"Parameters3" : {
+    "WebServerPort": {
+      "Default": "80",
+      "Description" : "TCP/IP port for the web server",
+      "Type": "Number",
+      "MinValue": "1",
+      "MaxValue": "65535"
+    }
+},
+
+"Parameters4" : {
+    "WebServerPortLimited": {
+      "Default": "80",
+      "Description" : "TCP/IP port for the web server",
+      "Type": "Number",
+      "AllowedValues" : ["80", "8888"]
+    }
+},
+
+"Parameters5" : {
+    "UserRoles" : {
+        "Type" : "CommaDelimitedList",
+        "Default" : "guest,newhire",
+        "NoEcho" : "TRUE"
+    }
+},
+
+"Parameters6" : {
+    "StackName" : {
+        "Type" : "String",
+        "Default" : { "Ref" : "AWS::StackName"}
+    }
+}
+
+},
+
+"Mappings" : {
+    "LightColor" : {
+        "Stop" : {
+            "Description" : "red",
+            "RGBColor" : "RED 255 GREEN 0 BLUE 0"
+        },
+        "SlowDown" : {
+            "Description" : "yellow",
+            "RGBColor" : "RED 255 GREEN 255 BLUE 0"
+        },
+        "Go" : {
+            "Description" : "green",
+            "RGBColor" : "RED 0 GREEN 128 BLUE 0"
+        }
+    }
+},
+
+"Outputs" : {
+    "MyPhone" : {
+        "Value" : "Please call 555-5555",
+        "Description" : "A random message for aws cloudformation describe-stacks"
+    }
+},
+
+"Outputs2" : {
+   "SNSTopic" : { "Value" : { "Ref" : "MyNotificationTopic" } },
+   "StackName" : { "Value" : { "Ref" : "AWS::StackName" } }
+},
+
+"Outputs3" : {
+    "MyOutput" : {
+        "Value" : { "Fn::Join" :
+            [ "%", [ "A-string", {"Ref" : "AWS::StackName" } ] ]
+        }
+    }
+},
+
+"Tags" : [
+      {
+        "Key" : "keyname1",
+        "Value" : "value1"
+      },
+      {
+        "Key" : "keyname2",
+        "Value" : "value2"
+      }
+    ]
+
+}
+
