@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Elastic Load Balancing load balancer with a single listener, and no instances.
   Resource("MyLoadBalancer") do
     Type("AWS::ElasticLoadBalancing::LoadBalancer")
     Property("AvailabilityZones", [
@@ -15,6 +16,7 @@ CloudFormation do
 ])
   end
 
+#  Elastic Load Balancing load balancer with two Amazon EC2 instances, a single listener and a health check.
   Resource("MyLoadBalancer2") do
     Type("AWS::ElasticLoadBalancing::LoadBalancer")
     Property("AvailabilityZones", [
