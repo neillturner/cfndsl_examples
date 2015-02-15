@@ -1,6 +1,8 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+#  adds an Amazon Route 53 resource record set containing an SPF record for the domain name mysite.example.com
+# that uses the HostedZoneId property to specify the hosted zone.
   Resource("myDNSRecord") do
     Type("AWS::Route53::RecordSet")
     Property("HostedZoneId", "/hostedzone/Z3DG6IL3SJCGPX")
@@ -12,6 +14,8 @@ CloudFormation do
 ])
   end
 
+# adds an Amazon Route 53 resource record set containing A records for the domain name "mysite.example.com" using 
+# the HostedZoneName property to specify the hosted zone.
   Resource("myDNSRecord2") do
     Type("AWS::Route53::RecordSet")
     Property("HostedZoneName", "example.com.")
@@ -25,6 +29,7 @@ CloudFormation do
 ])
   end
 
+# Using RecordSetGroup to Set Up Weighted Resource Record Sets
   Resource("myDNSOne") do
     Type("AWS::Route53::RecordSetGroup")
     Property("HostedZoneName", "example.com.")
@@ -53,6 +58,7 @@ CloudFormation do
 ])
   end
 
+# Using RecordSetGroup to Set Up an Alias Resource Record Set
   Resource("myELB") do
     Type("AWS::ElasticLoadBalancing::LoadBalancer")
     Property("AvailabilityZones", [
@@ -67,6 +73,7 @@ CloudFormation do
 ])
   end
 
+# An Alias Resource Record Set for a CloudFront Distribution
   Resource("myDNS") do
     Type("AWS::Route53::RecordSetGroup")
     Property("HostedZoneId", Ref("myHostedZoneID"))
