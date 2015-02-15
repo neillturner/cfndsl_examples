@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Amazon RDS DB Instance Resource
   Resource("MyDB") do
     Type("AWS::RDS::DBInstance")
     DeletionPolicy("Snapshot")
@@ -15,6 +16,7 @@ CloudFormation do
     Property("MasterUserPassword", "MyPassword")
   end
 
+# Amazon RDS Oracle Database DB Instance Resource
   Resource("MyDB2") do
     Type("AWS::RDS::DBInstance")
     DeletionPolicy("Snapshot")
@@ -30,6 +32,7 @@ CloudFormation do
     Property("MasterUserPassword", "SecretPassword01")
   end
 
+# Amazon RDS DBSecurityGroup Resource for CIDR Range
   Resource("MyDbSecurityByCIDRIPGroup") do
     Type("AWS::RDS::DBSecurityGroup")
     Property("GroupDescription", "Ingress for CIDRIP")
@@ -38,6 +41,7 @@ CloudFormation do
 })
   end
 
+# Amazon RDS DBSecurityGroup with an Amazon EC2 security group
   Resource("DBInstance") do
     Type("AWS::RDS::DBInstance")
     Property("DBName", Ref("DBName"))
@@ -78,6 +82,7 @@ CloudFormation do
 ])
   end
 
+# Multiple VPC security groups
   Resource("DBinstance2") do
     Type("AWS::RDS::DBInstance")
     DeletionPolicy("Snapshot")
@@ -93,6 +98,7 @@ CloudFormation do
     Property("MasterUsername", "MyDBUsername")
   end
 
+# Amazon RDS Database Instance in a VPC Security Group
   Resource("DbSecurityByEC2SecurityGroup") do
     Type("AWS::RDS::DBSecurityGroup")
     Property("GroupDescription", "Ingress for Amazon EC2 security group")
