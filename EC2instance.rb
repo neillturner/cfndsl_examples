@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# EC2 Instance with Block Device Mapping
   Resource("Ec2Instance") do
     Type("AWS::EC2::Instance")
     Property("ImageId", FnFindInMap("AWSRegionArch2AMI", Ref("AWS::Region"), FnFindInMap("AWSInstanceType2Arch", Ref("InstanceType"), "Arch")))
@@ -24,7 +25,8 @@ CloudFormation do
   }
 ])
   end
-
+  
+# EC2 Instance with Ephemeral Drives
   Resource("Ec2Instance2") do
     Type("AWS::EC2::Instance")
     Property("ImageId", FnFindInMap("AWSRegionArch2AMI", Ref("AWS::Region"), "PV64"))
@@ -40,24 +42,28 @@ CloudFormation do
   }
 ])
   end
-
+  
+# Assigning an Amazon EC2 Elastic IP Using AWS::EC2::EIP Snippet
   Resource("MyEIP") do
     Type("AWS::EC2::EIP")
     Property("InstanceId", Ref("logical name of an AWS::EC2::Instance resource"))
   end
 
+# Assigning an Existing Elastic IP to an Amazon EC2 instance using AWS::EC2::EIPAssociation Snippet
   Resource("IPAssoc") do
     Type("AWS::EC2::EIPAssociation")
     Property("InstanceId", Ref("logical name of an AWS::EC2::Instance resource"))
     Property("EIP", "existing Elastic IP address")
   end
 
+# Assigning an Existing VPC Elastic IP to an Amazon EC2 instance using AWS::EC2::EIPAssociation Snippet
   Resource("VpcIPAssoc") do
     Type("AWS::EC2::EIPAssociation")
     Property("InstanceId", Ref("logical name of an AWS::EC2::Instance resource"))
     Property("AllocationId", "existing VPC Elastic IP allocation ID")
   end
 
+#  create an instance with two elastic network interface (ENI). The sample assumes you have already created a VPC
   Resource("ControlPortAddress") do
     Type("AWS::EC2::EIP")
     Property("Domain", "vpc")
@@ -172,12 +178,14 @@ CloudFormation do
 ])))
   end
 
+# This snippet shows a simple AWS::EC2::Instance resource.
   Resource("MyInstance") do
     Type("AWS::EC2::Instance")
     Property("AvailabilityZone", "us-east-1a")
     Property("ImageId", "ami-20b65349")
   end
 
+# Amazon EC2 Instance with Volume, Tag, and UserData Properties
   Resource("MyInstance2") do
     Type("AWS::EC2::Instance")
     Property("KeyName", Ref("KeyName"))
@@ -198,14 +206,16 @@ CloudFormation do
     "VolumeId" => Ref("logical name of AWS::EC2::Volume resource")
   }
 ])
-    Property("Tags", [
+
+  Property("Tags", [
   {
     "Key"   => "Name",
     "Value" => "MyTag"
   }
 ])
   end
-
+  
+# Amazon EC2 Instance Resource with an Amazon SimpleDB Domain
   Resource("MyInstance3") do
     Type("AWS::EC2::Instance")
     Property("UserData", FnBase64(FnJoin("", [
@@ -216,6 +226,7 @@ CloudFormation do
     Property("ImageId", "ami-20b65349")
   end
 
+# Amazon EC2 Security Group Resource with Two CIDR Range Ingress Rules
   Resource("ServerSecurityGroup") do
     Type("AWS::EC2::SecurityGroup")
     Property("GroupDescription", "allow connections from specified CIDR ranges")
@@ -235,6 +246,7 @@ CloudFormation do
 ])
   end
 
+# Amazon EC2 Security Group Resource with Two Security Group Ingress Rules
   Resource("ServerSecurityGroupBySG") do
     Type("AWS::EC2::SecurityGroup")
     Property("GroupDescription", "allow connections from specified source security group")
@@ -255,6 +267,7 @@ CloudFormation do
 ])
   end
 
+# Amazon EC2 Security Group Resource with LoadBalancer Ingress Rule
   Resource("myELB") do
     Type("AWS::ElasticLoadBalancing::LoadBalancer")
     Property("AvailabilityZones", [
@@ -283,6 +296,7 @@ CloudFormation do
 ])
   end
 
+# Using AWS::EC2::SecurityGroupIngress to Create Mutually Referencing Amazon EC2 Security Group Resources
   Resource("SGroup1") do
     Type("AWS::EC2::SecurityGroup")
     Property("GroupDescription", "EC2 Instance access")
@@ -311,6 +325,7 @@ CloudFormation do
     Property("SourceSecurityGroupName", Ref("SGroup1"))
   end
 
+# Amazon EC2 Volume Resource
   Resource("MyEBSVolume") do
     Type("AWS::EC2::Volume")
     DeletionPolicy("Snapshot")
@@ -319,6 +334,7 @@ CloudFormation do
     Property("AvailabilityZone", Ref("AvailabilityZone"))
   end
 
+# Amazon EC2 VolumeAttachment Resource
   Resource("Ec2Instance4") do
     Type("AWS::EC2::Instance")
     Property("SecurityGroups", [
@@ -353,6 +369,7 @@ CloudFormation do
     Property("Device", "/dev/sdh")
   end
 
+# Amazon EC2 Instance in a Default VPC Security Group
   Resource("myVPC") do
     Type("AWS::EC2::VPC")
     Property("CidrBlock", Ref("myVPCCIDRRange"))
