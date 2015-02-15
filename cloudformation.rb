@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Mapping Section with Three Mappings
   Mapping("LightColor", {
   "Go"       => {
     "Description" => "green",
@@ -16,6 +17,7 @@ CloudFormation do
   }
 })
 
+# Base64 Encoded UserData Property
   Resource("UserData") do
     Type("")
   end
