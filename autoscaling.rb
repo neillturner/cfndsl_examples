@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Auto Scaling Launch Configuration Resource
   Resource("SimpleConfig") do
     Type("AWS::AutoScaling::LaunchConfiguration")
     Property("ImageId", "ami-6411e20d")
@@ -23,6 +24,7 @@ CloudFormation do
 ])
   end
 
+# Auto Scaling Group Resource
   Resource("MyServerGroup") do
     Type("AWS::AutoScaling::AutoScalingGroup")
     Property("AvailabilityZones", FnGetAZs(""))
@@ -34,6 +36,7 @@ CloudFormation do
 ])
   end
 
+# Auto Scaling Policy Triggered by CloudWatch Alarm
   Resource("ScaleUpPolicy") do
     Type("AWS::AutoScaling::ScalingPolicy")
     Property("AdjustmentType", "ChangeInCapacity")
@@ -63,6 +66,7 @@ CloudFormation do
     Property("MetricName", "CPUUtilization")
   end
 
+# Auto Scaling Group with Notifications
   Resource("MyAsGroupWithNotification") do
     Type("AWS::AutoScaling::AutoScalingGroup")
     Property("AvailabilityZones", Ref("azList"))
