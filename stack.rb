@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Nesting a Stack with Input Parameters in a Template
   Resource("myStackWithParams") do
     Type("AWS::CloudFormation::Stack")
     Property("TemplateURL", "https://s3.amazonaws.com/cloudformation-templates-us-east-1/EC2ChooseAMI.template")
