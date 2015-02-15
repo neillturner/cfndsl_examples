@@ -1,6 +1,12 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# AWS Elastic Beanstalk Sample PHP
+#
+# The following sample template deploys a sample PHP web application that is stored in an Amazon S3 bucket. The AWS Elastic 
+# Beanstalk environment is 64-bit Amazon Linux running PHP 5.3. The environment is also an autoscaling, load-balancing
+# environment, with a minimum of two Amazon EC2 instances and a maximum of six.
+#
   Resource("sampleApplication") do
     Type("AWS::ElasticBeanstalk::Application")
     Property("Description", "AWS Elastic Beanstalk Sample Application")
