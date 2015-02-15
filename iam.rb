@@ -1,6 +1,8 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+
+# Declaring an IAM User Resource
   Resource("myuser") do
     Type("AWS::IAM::User")
     Property("Path", "/")
@@ -63,6 +65,10 @@ CloudFormation do
 ])
   end
 
+# Declaring an IAM Access Key Resource
+#
+# The myaccesskey resource creates an access key and assigns it to an IAM user that is declared as an AWS::IAM::User resource 
+# in the template.
   Resource("myaccesskey") do
     Type("AWS::IAM::AccessKey")
     Property("UserName", Ref("myuser"))
@@ -89,6 +95,7 @@ CloudFormation do
 ])))
   end
 
+# Declaring an IAM Group Resource
   Resource("mygroup") do
     Type("AWS::IAM::Group")
     Property("Path", "/myapplication/")
@@ -122,6 +129,7 @@ CloudFormation do
 ])
   end
 
+# Adding Users to a Group
   Resource("addUserToGroup") do
     Type("AWS::IAM::UserToGroupAddition")
     Property("GroupName", "myexistinggroup2")
@@ -131,6 +139,7 @@ CloudFormation do
 ])
   end
 
+# Declaring an IAM Policy
   Resource("mypolicy") do
     Type("AWS::IAM::Policy")
     Property("PolicyName", "mygrouppolicy")
@@ -154,6 +163,7 @@ CloudFormation do
 ])
   end
 
+# Declaring an Amazon S3 Bucket Policy
   Resource("mybucketpolicy") do
     Type("AWS::S3::BucketPolicy")
     Property("PolicyDocument", {
@@ -180,6 +190,7 @@ CloudFormation do
     Property("Bucket", Ref("mybucket"))
   end
 
+# Declaring an Amazon SNS Topic Policy
   Resource("mysnspolicy") do
     Type("AWS::SNS::TopicPolicy")
     Property("PolicyDocument", {
@@ -202,6 +213,7 @@ CloudFormation do
 ])
   end
 
+# Declaring an Amazon SQS Policy
   Resource("mysqspolicy") do
     Type("AWS::SQS::QueuePolicy")
     Property("PolicyDocument", {
@@ -227,6 +239,7 @@ CloudFormation do
 ])
   end
 
+# Example IAM Role with External Policy and Instance Profiles wired to an EC2 Instance
   Resource("myEC2Instance") do
     Type("AWS::EC2::Instance")
     Property("ImageId", "ami-205fba49")
@@ -291,6 +304,7 @@ CloudFormation do
     Property("IamInstanceProfile", Ref("RootInstanceProfile"))
   end
 
+# Example IAM Roles With External Policy And Instance Profiles Wired to an AutoScaling Group
   Resource("myASGrpOne") do
     Type("AWS::AutoScaling::AutoScalingGroup")
     Property("AvailabilityZones", [
