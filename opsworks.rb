@@ -1,6 +1,11 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# AWS OpsWorks Sample PHP App
+#
+# The following sample template deploys a sample AWS OpsWorks PHP web application that is stored in public Git repository. 
+# The AWS OpsWorks stack includes two application servers with a load balancer that distributes incoming traffic evenly
+# across the servers. The AWS OpsWorks stack also includes a back-end MySQL database server to store data. 
   Parameter("ServiceRole") do
     Description("The OpsWorks service role")
     Type("String")
