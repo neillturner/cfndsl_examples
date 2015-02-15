@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Using a Wait Condition with an Amazon EC2 Instance
   Mapping("RegionMap", {
   "ap-northeast-1" => {
     "AMI" => "ami-8e08a38f"
