@@ -1,3 +1,15 @@
+# Amazon CloudWatch Logs Sample
+#
+# The following template describes a web server and its custom metrics. Log events from the web server's log provides the data
+# for the custom metrics. To send log events to a custom metric, the UserData field installs a CloudWatch Logs agent on the
+# Amazon EC2 instance. The configuration information for the agent, such as the location of the server log file, the log group
+# name, and the log stream name, are defined in the /tmp/cwlogs/apacheaccess.conf file. The log stream is created after the
+# web server starts sending log events to the /var/log/httpd/access_log file.
+#
+# The two metric filters describe how the log information is transformed into CloudWatch metrics. The 404 metric counts the
+# number of 404 occurrences. The size metric tracks the size of a request. The two CloudWatch alarms will send notifications 
+# if there are more than two 404s within two minutes or if the average request size is over 3500 KB over 10 minutes.
+#
 CloudFormation do
   Description("AWS CloudFormation Sample Template for CloudWatch Logs.")
   AWSTemplateFormatVersion("2010-09-09")
