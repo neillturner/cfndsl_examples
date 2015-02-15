@@ -1,6 +1,14 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Amazon Redshift Cluster
+#
+# The following sample template creates an Amazon Redshift cluster according to the parameter values that are specified
+# when the stack is created. The cluster parameter group that is associated with the Amazon Redshift cluster enables user
+# activity logging. The template also launches the Amazon Redshift clusters in an Amazon VPC that is defined in the template.
+# The VPC includes an internet gateway so that you can access the Amazon Redshift clusters from the Internet. However, the
+# communication between the cluster and the Internet gateway must also be enabled, which is done by the route table entry.
+#
   Parameter("DatabaseName") do
     Description("The name of the first database to be created when the cluster is created")
     Type("String")
