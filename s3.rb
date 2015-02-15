@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Creating a Static Website Using a Custom Domain
   Parameter("RootDomainName") do
     Description("Domain name for your website (example.com)")
     Type("String")
