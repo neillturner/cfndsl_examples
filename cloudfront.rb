@@ -1,6 +1,7 @@
 CloudFormation do
   AWSTemplateFormatVersion("2010-09-09")
 
+# Amazon CloudFront Distribution Resource with an Amazon S3 Origin
   Resource("myDistribution") do
     Type("AWS::CloudFront::Distribution")
     Property("DistributionConfig", {
@@ -64,6 +65,7 @@ CloudFormation do
 })
   end
 
+# Amazon CloudFront Distribution Resource with Custom Origin
   Resource("myDistribution2") do
     Type("AWS: : CloudFront: : Distribution")
     Property("DistributionConfig", {
@@ -129,6 +131,7 @@ CloudFormation do
 })
   end
 
+# Amazon CloudFront Distribution with Multi-origin Support.
   Resource("myDistribution3") do
     Type("AWS::CloudFront::Distribution")
     Property("DistributionConfig", {
