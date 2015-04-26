@@ -1,5 +1,5 @@
 # Cfndsl Examples
-Cloud Fornation examples for cfndsl ruby coding
+Cloud Formation examples for cfndsl ruby coding
 
 
 this have been built using cfn2dsl
