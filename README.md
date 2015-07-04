@@ -2,7 +2,7 @@
 Cloud Formation examples for cfndsl ruby coding
 
 
-this have been built using https://github.com/stevenjack/cfndsl/
+this have been built using cfn2dsl
 
 
 from Amazom AWS Template Snippets
