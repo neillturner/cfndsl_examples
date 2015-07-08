@@ -1,0 +1,277 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "This template creates a single server installation of Active Directory. Domain Administrator password will be the one retrieved from the instance. For adding members to the domain, ensure that they are launched in domain member security group created by this template and then configure them to use this instance's elastic IP as the DNS server. **WARNING** This template creates Amazon EC2 Windows instance and related resources. You will be billed for the AWS resources used if you create a stack from this template.",
+
+  "Parameters" : {
+    "KeyPairName" : {
+      "Description" : "Name of an existing Amazon EC2 key pair for RDP access",
+      "Type" : "String"
+    },
+    "InstanceType" : {
+      "Description" : "Amazon EC2 instance type",
+      "Type" : "String",
+      "Default" : "m1.large",
+      "AllowedValues" : [ "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.medium", "c1.xlarge"]
+    },
+    "DomainDNSName" : {
+      "Description" : "Fully qualified domain name (FQDN) of the forest root domain e.g. corp.example.com",
+      "Type" : "String",
+      "MinLength" : "3",
+      "MaxLength" : "25",
+      "AllowedPattern" : "[a-zA-Z0-9]+\\..+"
+    },
+    "DomainNetBIOSName" : {
+      "Description" : "NetBIOS name of the domain (upto 15 characters) for users of earlier versions of Windows e.g. CORP",
+      "Type" : "String",
+      "MinLength" : "1",
+      "MaxLength" : "15",
+      "AllowedPattern" : "[a-zA-Z0-9]+"
+    },   
+    "RestoreModePassword" : {
+      "Description" : "Password for a separate Administrator account when the domain controller is in Restore Mode. Must be at least 8 characters containing letters, numbers and symbols",
+      "Type" : "String",
+      "MinLength" : "8",
+      "MaxLength" : "32",
+      "AllowedPattern" : "(?=^.{6,255}$)((?=.*\\d)(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[^A-Za-z0-9])(?=.*[a-z])|(?=.*[^A-Za-z0-9])(?=.*[A-Z])(?=.*[a-z])|(?=.*\\d)(?=.*[A-Z])(?=.*[^A-Za-z0-9]))^.*",
+      "NoEcho" : "True"
+    }
+  },
+
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "m1.small"   : { "Arch" : "64" },
+      "m1.medium"  : { "Arch" : "64" },
+      "m1.large"   : { "Arch" : "64" },
+      "m1.xlarge"  : { "Arch" : "64" },
+      "m2.xlarge"  : { "Arch" : "64" },
+      "m2.2xlarge" : { "Arch" : "64" },
+      "m2.4xlarge" : { "Arch" : "64" },
+      "c1.medium"  : { "Arch" : "64" },
+      "c1.xlarge"  : { "Arch" : "64" }
+    },
+    "AWSRegionArch2AMI" : {
+      "us-east-1"      : {"64" : "ami-5f42c036"},
+      "us-west-2"      : {"64" : "ami-1679f126"},
+      "us-west-1"      : {"64" : "ami-5eb7961b"},
+      "eu-west-1"      : {"64" : "ami-8e969bfa"},
+      "ap-southeast-1" : {"64" : "ami-b8f8bbea"},
+      "ap-southeast-2" : {"64" : "ami-a740d79d"},
+      "ap-northeast-1" : {"64" : "ami-2210a823"},
+      "sa-east-1"      : {"64" : "ami-9fc41c82"}
+    }
+  },
+
+  "Resources" : {
+    "IAMUser" : {
+      "Type" : "AWS::IAM::User",
+      "Properties" : {
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": { "Statement":[{
+            "Effect": "Allow",
+            "Action": "CloudFormation:DescribeStackResource",
+            "Resource": "*"
+          }]}
+        }]
+      }
+    },
+
+    "IAMUserAccessKey" : {
+      "Type" : "AWS::IAM::AccessKey",
+      "Properties" : {
+        "UserName" : {"Ref": "IAMUser"}
+      }
+    },
+    
+    "DomainControllerEndpoint" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "InstanceId" : { "Ref" : "DomainController" }
+      }
+    },
+  
+    "DomainController": {  
+      "Type" : "AWS::EC2::Instance",
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {          
+          "config" : {
+            "files" : {
+              "c:\\cfn\\cfn-credentials" : {
+                "content" : { "Fn::Join" : ["", [
+                  "AWSAccessKeyId=", { "Ref" : "IAMUserAccessKey" }, "\n",
+                  "AWSSecretKey=", {"Fn::GetAtt": ["IAMUserAccessKey", "SecretAccessKey"]}, "\n"
+                ]]}
+              },
+
+              "c:\\cfn\\cfn-hup.conf" : {
+                "content" : { "Fn::Join" : ["", [
+                  "[main]\n",
+                  "stack=", { "Ref" : "AWS::StackName" }, "\n",
+                  "credential-file=c:\\cfn\\cfn-credentials\n",
+                  "region=", { "Ref" : "AWS::Region" }, "\n"
+                ]]}
+              },
+
+              "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" : {
+                "content": { "Fn::Join" : ["", [
+                  "[cfn-auto-reloader-hook]\n",
+                  "triggers=post.update\n",
+                  "path=Resources.DomainController.Metadata.AWS::CloudFormation::Init\n",
+                  "action=cfn-init.exe -v -s ", { "Ref" : "AWS::StackName" },
+                        " -r DomainController",
+                        " --credential-file c:\\cfn\\cfn-credentials",
+                        " --region ", { "Ref" : "AWS::Region" }, "\n"
+                ]]}
+              },
+              
+              "C:\\cfn\\RunCommand.bat" : {
+                "content" : "%~1\nIF %ERRORLEVEL% GTR 10 ( exit /b 1 ) else ( exit /b 0 )"
+              }
+            },
+        
+            "commands" : {
+              "1-run-dcpromo" : {
+                "command" : { "Fn::Join" : [ "", [
+                  "C:\\cfn\\RunCommand.bat \"dcpromo /unattend  /ReplicaOrNewDomain:Domain  /NewDomain:Forest  /NewDomainDNSName:",
+                  { "Ref" : "DomainDNSName" },
+                  "  /ForestLevel:4 /DomainNetbiosName:",
+                  { "Ref" : "DomainNetBIOSName" },
+                  " /DomainLevel:4  /InstallDNS:Yes  /ConfirmGc:Yes  /CreateDNSDelegation:No  /DatabasePath:\"C:\\Windows\\NTDS\"  /LogPath:\"C:\\Windows\\NTDS\"  /SYSVOLPath:\"C:\\Windows\\SYSVOL\" /SafeModeAdminPassword=", 
+                  { "Ref" : "RestoreModePassword" }, 
+                  " /RebootOnCompletion:Yes\"" 
+                  ]]},
+                "waitAfterCompletion" : "forever"
+              },
+              "2-signal-success" : { 
+                "command" : { "Fn::Join" : ["", [ 
+                  "cfn-signal.exe -e 0 \"", { "Ref" : "DomainControllerWaitHandle" },"\"" ]]
+                }
+              }
+            }
+          }
+        }
+      },
+      
+      "Properties": {
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
+        "InstanceType" : { "Ref" : "InstanceType" },
+        "SecurityGroups" : [ {"Ref" : "DomainControllerSecurityGroup"} ],
+        "KeyName" : { "Ref" : "KeyPairName" },
+        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+            "<script>\n",
+          
+            "cfn-init.exe -v -s ", { "Ref" : "AWS::StackName" }, 
+            " -r DomainController ",
+            " --access-key ", { "Ref" : "IAMUserAccessKey" },
+            " --secret-key ", {"Fn::GetAtt": ["IAMUserAccessKey", "SecretAccessKey"]},
+            " --region ", { "Ref" : "AWS::Region" }, "\n",
+
+            "SCHTASKS /Create /SC MINUTE /MO 10 /TN cfn-hup /RU SYSTEM /TR \"cfn-hup.exe -v --no-daemon\"", "\n",
+
+            "</script>"          
+        ]]}}        
+      }
+    },
+    
+    "DomainControllerWaitCondition" : {
+      "Type" : "AWS::CloudFormation::WaitCondition",
+      "DependsOn" : "DomainController",
+      "Properties" : {
+        "Handle" : {"Ref" : "DomainControllerWaitHandle"},
+        "Timeout" : "1200"
+      }
+    },
+    
+    "DomainControllerWaitHandle" : {
+      "Type" : "AWS::CloudFormation::WaitConditionHandle"
+    },
+    
+    "DomainControllerSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Domain Controller",
+        "SecurityGroupIngress" : [
+          {"IpProtocol" : "udp", "FromPort" : "123", "ToPort" : "123", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "135", "ToPort" : "135", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "udp", "FromPort" : "138", "ToPort" : "138", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "1024", "ToPort" : "65535", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "389", "ToPort" : "389", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "udp", "FromPort" : "389", "ToPort" : "389", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "636", "ToPort" : "636", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "3268", "ToPort" : "3268", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "3269", "ToPort" : "3269", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "53", "ToPort" : "53", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "udp", "FromPort" : "53", "ToPort" : "53", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "88", "ToPort" : "88", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "udp", "FromPort" : "88", "ToPort" : "88", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "445", "ToPort" : "445", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "udp", "FromPort" : "445", "ToPort" : "445", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "udp", "FromPort" : "135", "ToPort" : "135", "SourceSecurityGroupName" : { "Ref" : "DomainMemberSecurityGroup" } },
+          {"IpProtocol" : "tcp", "FromPort" : "3389", "ToPort" : "3389", "CidrIp" : "0.0.0.0/0"},
+          {"IpProtocol" : "icmp", "FromPort" : "-1", "ToPort" : "-1", "CidrIp" : "0.0.0.0/0"},
+          {"IpProtocol" : "udp", "FromPort" : "53", "ToPort" : "53", "CidrIp" : "0.0.0.0/0"}
+        ]
+      }      
+    }, 
+    
+    "DomainMemberSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Domain Members",
+        "SecurityGroupIngress" : [
+        ]
+      }      
+    },    
+    
+    "DomainMemberSecurityGroupIngress1" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : { "GroupName" : { "Ref" : "DomainMemberSecurityGroup" }, "IpProtocol" : "tcp", "FromPort" : "49152", "ToPort" : "65535", "SourceSecurityGroupName" : { "Ref" : "DomainControllerSecurityGroup" } }
+    },
+    
+    "DomainMemberSecurityGroupIngress2" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : { "GroupName" : { "Ref" : "DomainMemberSecurityGroup" }, "IpProtocol" : "udp", "FromPort" : "49152", "ToPort" : "65535", "SourceSecurityGroupName" : { "Ref" : "DomainControllerSecurityGroup" } }
+    },
+    
+    "DomainMemberSecurityGroupIngress3" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : { "GroupName" : { "Ref" : "DomainMemberSecurityGroup" }, "IpProtocol" : "tcp", "FromPort" : "53", "ToPort" : "53", "SourceSecurityGroupName" : { "Ref" : "DomainControllerSecurityGroup" } }
+    },
+    
+    "DomainMemberSecurityGroupIngress4" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : { "GroupName" : { "Ref" : "DomainMemberSecurityGroup" }, "IpProtocol" : "udp", "FromPort" : "53", "ToPort" : "53", "SourceSecurityGroupName" : { "Ref" : "DomainControllerSecurityGroup" } }
+    },
+    
+    "DomainMemberSecurityGroupIngress5" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : { "GroupName" : { "Ref" : "DomainMemberSecurityGroup" }, "IpProtocol" : "tcp", "FromPort" : "1024", "ToPort" : "65535", "SourceSecurityGroupName" : { "Ref" : "DomainControllerSecurityGroup" } }
+    },
+    
+    "DomainMemberSecurityGroupIngress6" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : { "GroupName" : { "Ref" : "DomainMemberSecurityGroup" }, "IpProtocol" : "tcp", "FromPort" : "135", "ToPort" : "135", "SourceSecurityGroupName" : { "Ref" : "DomainControllerSecurityGroup" } }
+    },
+    
+    "DomainMemberSecurityGroupIngress7" : {
+      "Type" : "AWS::EC2::SecurityGroupIngress",
+      "Properties" : { "GroupName" : { "Ref" : "DomainMemberSecurityGroup" }, "IpProtocol" : "udp", "FromPort" : "135", "ToPort" : "135", "SourceSecurityGroupName" : { "Ref" : "DomainControllerSecurityGroup" } }
+    }
+  },
+
+  "Outputs" : {
+    "DomainControllerElasticIP" : {
+      "Value" : { "Ref" : "DomainControllerEndpoint" },
+      "Description" : "Elastic IP address of Active Directory server which is also a DNS server"
+    },
+    "DomainAdmin" : {
+      "Value" : { "Fn::Join" : ["", [{ "Ref" : "DomainNetBIOSName" }, "\\Administrator" ]] },
+      "Description" : "Default domain administrator account"
+    },
+    "DomainAdminPassword" : {
+      "Value" : "Please retrieve Administrator password of the instance"
+    }    
+  }  
+}

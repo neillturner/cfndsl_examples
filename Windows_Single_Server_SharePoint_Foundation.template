@@ -1,0 +1,177 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+
+  "Description" : "This template creates a single server installation of Microsoft SharePoint Foundation 2010. **WARNING** This template creates Amazon EC2 Windows instance and related resources. You will be billed for the AWS resources used if you create a stack from this template. Also, you are solely responsible for complying with the license terms for the software downloaded and installed by this template. By creating a stack from this template, you are agreeing to such terms.",
+
+  "Parameters" : {
+    "KeyPairName" : {
+      "Description" : "Name of an existing Amazon EC2 key pair for RDP access",
+      "Type" : "String"
+    },
+    "InstanceType" : {
+      "Description" : "Amazon EC2 instance type",
+      "Type" : "String",
+      "Default" : "m1.large",
+      "AllowedValues" : [ "m1.small", "m1.medium", "m1.large", "m1.xlarge", "m2.xlarge", "m2.2xlarge", "m2.4xlarge", "c1.medium", "c1.xlarge"]
+    }
+  },
+
+  "Mappings" : {
+    "AWSInstanceType2Arch" : {
+      "m1.small"   : { "Arch" : "64" },
+      "m1.medium"  : { "Arch" : "64" },
+      "m1.large"   : { "Arch" : "64" },
+      "m1.xlarge"  : { "Arch" : "64" },
+      "m2.xlarge"  : { "Arch" : "64" },
+      "m2.2xlarge" : { "Arch" : "64" },
+      "m2.4xlarge" : { "Arch" : "64" },
+      "c1.medium"  : { "Arch" : "64" },
+      "c1.xlarge"  : { "Arch" : "64" }
+    },
+    "AWSRegionArch2AMI" : {
+      "us-east-1"      : {"64" : "ami-5f42c036"},
+      "us-west-2"      : {"64" : "ami-1679f126"},
+      "us-west-1"      : {"64" : "ami-5eb7961b"},
+      "eu-west-1"      : {"64" : "ami-8e969bfa"},
+      "ap-southeast-1" : {"64" : "ami-b8f8bbea"},
+      "ap-southeast-2" : {"64" : "ami-a740d79d"},
+      "ap-northeast-1" : {"64" : "ami-2210a823"},
+      "sa-east-1"      : {"64" : "ami-9fc41c82"}
+    }
+  },
+
+  "Resources" : {
+    "IAMUser" : {
+      "Type" : "AWS::IAM::User",
+      "Properties" : {
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "root",
+          "PolicyDocument": { "Statement":[{
+            "Effect": "Allow",
+            "Action": "CloudFormation:DescribeStackResource",
+            "Resource": "*"
+          }]}
+        }]
+      }
+    },
+
+    "IAMUserAccessKey" : {
+      "Type" : "AWS::IAM::AccessKey",
+      "Properties" : {
+        "UserName" : {"Ref": "IAMUser"}
+      }
+    },
+
+    "SharePointFoundationSecurityGroup" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "GroupDescription" : "Enable HTTP and RDP",
+        "SecurityGroupIngress" : [
+          {"IpProtocol" : "tcp", "FromPort" : "80", "ToPort" : "80", "CidrIp" : "0.0.0.0/0"},
+          {"IpProtocol" : "tcp", "FromPort" : "3389", "ToPort" : "3389", "CidrIp" : "0.0.0.0/0"}
+        ]
+      }
+    },
+
+    "SharePointFoundationEIP" : {
+      "Type" : "AWS::EC2::EIP",
+      "Properties" : {
+        "InstanceId" : { "Ref" : "SharePointFoundation" }
+      }
+    },
+
+    "SharePointFoundation": {
+      "Type" : "AWS::EC2::Instance",
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "config" : {
+            "files" : {
+              "c:\\cfn\\cfn-credentials" : {
+                "content" : { "Fn::Join" : ["", [
+                  "AWSAccessKeyId=", { "Ref" : "IAMUserAccessKey" }, "\n",
+                  "AWSSecretKey=", {"Fn::GetAtt": ["IAMUserAccessKey", "SecretAccessKey"]}, "\n"
+                  ]]}
+                },
+              "c:\\cfn\\cfn-hup.conf" : {
+                "content" : { "Fn::Join" : ["", [
+                  "[main]\n",
+                  "stack=", { "Ref" : "AWS::StackName" }, "\n",
+                  "credential-file=c:\\cfn\\cfn-credentials\n",
+                  "region=", { "Ref" : "AWS::Region" }, "\n"
+                  ]]}
+              },
+              "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf" : {
+                "content": { "Fn::Join" : ["", [
+                  "[cfn-auto-reloader-hook]\n",
+                  "triggers=post.update\n",
+                  "path=Resources.SharePointFoundation.Metadata.AWS::CloudFormation::Init\n",
+                  "action=cfn-init.exe -v -s ", { "Ref" : "AWS::StackName" },
+                                                 " -r SharePointFoundation",
+                                                 " --credential-file c:\\cfn\\cfn-credentials",
+                                                 " --region ", { "Ref" : "AWS::Region" }, "\n"
+                ]]}
+              },
+              "C:\\SharePoint\\SharePointFoundation2010.exe" : {
+                "source" : "http://d3adzpja92utk0.cloudfront.net/SharePointFoundation.exe"
+              }
+            },
+            "commands" : {
+              "1-extract" : {
+                "command" : "C:\\SharePoint\\SharePointFoundation2010.exe /extract:C:\\SharePoint\\SPF2010 /quiet /log:C:\\SharePoint\\SharePointFoundation2010-extract.log"
+              },
+              "2-prereq" : {
+                "command" : "C:\\SharePoint\\SPF2010\\PrerequisiteInstaller.exe /unattended"
+              },
+              "3-install" : {
+                "command" : "C:\\SharePoint\\SPF2010\\setup.exe /config C:\\SharePoint\\SPF2010\\Files\\SetupSilent\\config.xml"
+              }
+            }
+          }
+        }
+      },
+      "Properties": {
+        "InstanceType" : { "Ref" : "InstanceType" },
+        "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" },
+                      { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
+        "SecurityGroups" : [ {"Ref" : "SharePointFoundationSecurityGroup"} ],
+        "KeyName" : { "Ref" : "KeyPairName" },
+        "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+          "<script>\n",
+
+          "cfn-init.exe -v -s ", { "Ref" : "AWS::StackName" }, 
+          " -r SharePointFoundation",
+          " --access-key ", { "Ref" : "IAMUserAccessKey" },
+          " --secret-key ", {"Fn::GetAtt": ["IAMUserAccessKey", "SecretAccessKey"]},
+          " --region ", { "Ref" : "AWS::Region" }, "\n",
+
+          "cfn-signal.exe -e %ERRORLEVEL% ", { "Fn::Base64" : { "Ref" : "SharePointFoundationWaitHandle" }}, "\n",
+
+          "SCHTASKS /Create /SC MINUTE /MO 10 /TN cfn-hup /RU SYSTEM /TR \"cfn-hup.exe -v --no-daemon\"", "\n",
+          
+          "</script>"
+          ]]}}
+        }
+    },
+
+    "SharePointFoundationWaitHandle" : {
+      "Type" : "AWS::CloudFormation::WaitConditionHandle"
+    },
+
+    "SharePointFoundationWaitCondition" : {
+      "Type" : "AWS::CloudFormation::WaitCondition",
+      "DependsOn" : "SharePointFoundation",
+      "Properties" : {
+        "Handle" : {"Ref" : "SharePointFoundationWaitHandle"},
+        "Timeout" : "3600"
+      }
+    }
+  },
+
+  "Outputs" : {
+    "SharePointFoundationURL" : {
+      "Value" : { "Fn::Join" : ["", ["http://", { "Ref" : "SharePointFoundationEIP" } ]] },
+      "Description" : "SharePoint Team Site URL. Please retrieve Administrator password of the instance and use it to access the URL"
+    }
+  }
+}
