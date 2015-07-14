@@ -1,7 +1,7 @@
 # Cfndsl Examples
 Cloud Formation examples and samples for cfndsl ruby coding https://github.com/stevenjack/cfndsl
 
-docFind all the types at: https://github.com/stevenjack/cfndsl/blob/master/lib/cfndsl/aws_types.yaml 
+Find all the types at: https://github.com/stevenjack/cfndsl/blob/master/lib/cfndsl/aws_types.yaml 
 
 this have been built using cfn2dsl
 
