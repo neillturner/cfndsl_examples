@@ -14,3 +14,7 @@ http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/CHAP_TemplateQuick
 and from Amazom AWS Samples
 
 https://github.com/satterly/AWSCloudFormation-samples.git
+
+Good document about Taking CloudFormation to the next level with CFNDSL:
+
+http://www.stelligent.com/tools/advanced-solutions-with-cfndsl-and-cloudformation/
