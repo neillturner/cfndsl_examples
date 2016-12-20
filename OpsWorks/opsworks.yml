@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  ServiceRole:
+    Default: aws-opsworks-service-role
+    Description: The OpsWorks service role
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9-]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+  InstanceRole:
+    Default: aws-opsworks-ec2-role
+    Description: The OpsWorks instance role
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9-]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+  AppName:
+    Default: myapp
+    Description: The app name
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric
+      characters.
+  MysqlRootPassword:
+    Description: MysqlRootPassword
+    NoEcho: 'true'
+    Type: String
+Resources:
+  myStack:
+    Type: AWS::OpsWorks::Stack
+    Properties:
+      Name: !Ref 'AWS::StackName'
+      ServiceRoleArn: !Join ['', ['arn:aws:iam::', !Ref 'AWS::AccountId', ':role/',
+          !Ref 'ServiceRole']]
+      DefaultInstanceProfileArn: !Join ['', ['arn:aws:iam::', !Ref 'AWS::AccountId',
+          ':instance-profile/', !Ref 'InstanceRole']]
+      UseCustomCookbooks: 'true'
+      CustomCookbooksSource:
+        Type: git
+        Url: git://github.com/amazonwebservices/opsworks-example-cookbooks.git
+  myLayer:
+    Type: AWS::OpsWorks::Layer
+    DependsOn: myApp
+    Properties:
+      StackId: !Ref 'myStack'
+      Type: php-app
+      Shortname: php-app
+      EnableAutoHealing: 'true'
+      AutoAssignElasticIps: 'false'
+      AutoAssignPublicIps: 'true'
+      Name: MyPHPApp
+      CustomRecipes:
+        Configure: ['phpapp::appsetup']
+  DBLayer:
+    Type: AWS::OpsWorks::Layer
+    DependsOn: myApp
+    Properties:
+      StackId: !Ref 'myStack'
+      Type: db-master
+      Shortname: db-layer
+      EnableAutoHealing: 'true'
+      AutoAssignElasticIps: 'false'
+      AutoAssignPublicIps: 'true'
+      Name: MyMySQL
+      CustomRecipes:
+        Setup: ['phpapp::dbsetup']
+      Attributes:
+        MysqlRootPassword: !Ref 'MysqlRootPassword'
+        MysqlRootPasswordUbiquitous: 'true'
+      VolumeConfigurations:
+      - MountPoint: /vol/mysql
+        NumberOfDisks: 1
+        Size: 10
+  ELBAttachment:
+    Type: AWS::OpsWorks::ElasticLoadBalancerAttachment
+    Properties:
+      ElasticLoadBalancerName: !Ref 'ELB'
+      LayerId: !Ref 'myLayer'
+  ELB:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones: !GetAZs ''
+      Listeners:
+      - LoadBalancerPort: '80'
+        InstancePort: '80'
+        Protocol: HTTP
+        InstanceProtocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: '2'
+        UnhealthyThreshold: '10'
+        Interval: '30'
+        Timeout: '5'
+  myAppInstance1:
+    Type: AWS::OpsWorks::Instance
+    Properties:
+      StackId: !Ref 'myStack'
+      LayerIds: [!Ref 'myLayer']
+      InstanceType: m1.small
+  myAppInstance2:
+    Type: AWS::OpsWorks::Instance
+    Properties:
+      StackId: !Ref 'myStack'
+      LayerIds: [!Ref 'myLayer']
+      InstanceType: m1.small
+  myDBInstance:
+    Type: AWS::OpsWorks::Instance
+    Properties:
+      StackId: !Ref 'myStack'
+      LayerIds: [!Ref 'DBLayer']
+      InstanceType: m1.small
+  myApp:
+    Type: AWS::OpsWorks::App
+    Properties:
+      StackId: !Ref 'myStack'
+      Type: php
+      Name: !Ref 'AppName'
+      AppSource:
+        Type: git
+        Url: git://github.com/amazonwebservices/opsworks-demo-php-simple-app.git
+        Revision: version2
+      Attributes:
+        DocumentRoot: web

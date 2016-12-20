@@ -1,0 +1,7 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  MySDBDomain:
+    Type: AWS::SDB::Domain
+    Properties:
+      Description: Other than this AWS CloudFormation Description property, SDB Domains
+        have no properties.

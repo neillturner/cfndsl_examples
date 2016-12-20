@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  SimpleConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: ami-6411e20d
+      SecurityGroups: [!Ref 'myEC2SecurityGroup', myExistingEC2SecurityGroup]
+      InstanceType: m1.small
+      BlockDeviceMappings:
+      - DeviceName: /dev/sdk
+        Ebs:
+          VolumeSize: '50'
+      - DeviceName: /dev/sdc
+        VirtualName: ephemeral0
+  MyServerGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones: !GetAZs ''
+      LaunchConfigurationName: !Ref 'SimpleConfig'
+      MinSize: '1'
+      MaxSize: '3'
+      LoadBalancerNames: [!Ref 'LB']
+  ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref 'asGroup'
+      Cooldown: '1'
+      ScalingAdjustment: '1'
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '10'
+      AlarmDescription: Alarm if CPU too high or metric disappears indicating instance
+        is down
+      Period: '60'
+      AlarmActions: [!Ref 'ScaleUpPolicy']
+      Namespace: AWS/EC2
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref 'asGroup'
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: CPUUtilization
+  MyAsGroupWithNotification:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones: !Ref 'azList'
+      LaunchConfigurationName: !Ref 'myLCOne'
+      MinSize: '0'
+      MaxSize: '2'
+      DesiredCapacity: '1'
+      NotificationConfiguration:
+        TopicARN: !Ref 'topic1'
+        NotificationTypes: ['autoscaling:EC2_INSTANCE_LAUNCH', 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+          'autoscaling:EC2_INSTANCE_TERMINATE', 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR']

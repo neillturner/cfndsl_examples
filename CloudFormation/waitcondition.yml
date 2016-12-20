@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-76f0061f
+    us-west-1:
+      AMI: ami-655a0a20
+    eu-west-1:
+      AMI: ami-7fd4e10b
+    ap-northeast-1:
+      AMI: ami-8e08a38f
+    ap-southeast-1:
+      AMI: ami-72621c20
+Resources:
+  Ec2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      UserData: !Base64
+        Ref: myWaitHandle
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+  myWaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+    Properties: {}
+  myWaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn: Ec2Instance
+    Properties:
+      Handle: !Ref 'myWaitHandle'
+      Timeout: '4500'
+Outputs:
+  ApplicationData:
+    Value: !GetAtt [myWaitCondition, Data]
+    Description: The data passed back as part of signalling the WaitCondition.
