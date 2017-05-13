@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'BuildAgentStack - example of parameters for stack'
+Parameters:
+  environmentName:
+    Type: String
+    AllowedValues: [Test,Prod]
+    Description: Enter environment
+    Default: Test
+Mappings:
+  EnvironmentInfo:
+    Test:
+      PublicSubnet: subnet-38999999
+      ImageId: ami-dd999999
+      Region: eu-west-1
+      KeyName: test-kp
+      SecurityGroup:  sg-33999999
+      AllocationId: eipalloc-1a999999
+    Prod:
+      PublicSubnet: subnet-5e999999
+      ImageId: ami-94999999
+      Region: eu-west-1
+      KeyName: prod-kp
+      SecurityGroup:  sg-68999999
+      AllocationId: eipalloc-3b999999
+Resources:
+  BuildAgentInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !FindInMap [EnvironmentInfo, !Ref 'environmentName', KeyName]
+      ImageId: !FindInMap [EnvironmentInfo, !Ref 'environmentName', ImageId]
+      InstanceType: m4.large
+      AvailabilityZone: eu-west-1a
+      SecurityGroupIds:
+      -  !FindInMap [EnvironmentInfo, !Ref 'environmentName', SecurityGroup]
+      Tags:
+      - Key: Name
+        Value: BuildAgent
+#        Value: !Join ['-', [!Ref 'environmentName', 'BuildAgent']]
+      SubnetId: !FindInMap [EnvironmentInfo, !Ref 'environmentName', PublicSubnet]
+      BlockDeviceMappings:
+      - DeviceName: /dev/sda1
+        Ebs:
+          VolumeSize: '70'
+          VolumeType: gp2
+  BuildAgentInstanceVpcIPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref BuildAgentInstance
+      AllocationId: !FindInMap [EnvironmentInfo, !Ref 'environmentName', AllocationId]
+Outputs:
+  URL:
+    Description: 'BuildAgentInstance'
+    Value: !Ref BuildAgentInstance
